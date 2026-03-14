@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Enumberator</title>
+<style>
+/* ── Reset & Base ───────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%; width: 100%;
+  overflow: hidden;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none; user-select: none;
+  touch-action: manipulation;
+}
+
+/* ── Backgrounds ────────────────────────────────────── */
+body {
+  background: linear-gradient(135deg, #fce4ec 0%, #e8f5e9 30%, #e3f2fd 60%, #fff8e1 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 20s ease infinite;
+}
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ── Screens ────────────────────────────────────────── */
+.screen {
+  position: absolute; inset: 0;
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 20px;
+  transition: opacity 0.5s;
+}
+.screen.active { display: flex; }
+
+/* ── Welcome Screen ─────────────────────────────────── */
+#welcome-screen .title {
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  font-weight: 900;
+  background: linear-gradient(135deg, #ff6b6b, #ffa726, #66bb6a, #42a5f5, #ab47bc);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: titleBounce 2s ease-in-out infinite;
+  text-align: center;
+  margin-bottom: 10px;
+}
+@keyframes titleBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+#welcome-screen .subtitle {
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  color: #666;
+  margin-bottom: 30px;
+  text-align: center;
+}
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  max-width: 600px;
+  width: 100%;
+}
+.level-btn {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 20px 16px;
+  border: 4px solid transparent;
+  border-radius: 24px;
+  font-size: 1.1rem; font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  min-height: 100px;
+  -webkit-tap-highlight-color: transparent;
+}
+.level-btn:active { transform: scale(0.95); }
+.level-btn .level-emoji { font-size: 2rem; margin-bottom: 6px; }
+.level-btn .level-name { font-size: 1.15rem; }
+.level-btn .level-desc { font-size: 0.85rem; opacity: 0.8; margin-top: 4px; }
+
+.level-btn:nth-child(1) { background: #ffcdd2; border-color: #ef9a9a; color: #c62828; }
+.level-btn:nth-child(2) { background: #c8e6c9; border-color: #a5d6a7; color: #2e7d32; }
+.level-btn:nth-child(3) { background: #bbdefb; border-color: #90caf9; color: #1565c0; }
+.level-btn:nth-child(4) { background: #e1bee7; border-color: #ce93d8; color: #7b1fa2; }
+
+.level-btn:hover { transform: scale(1.04); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+
+.floating-animals {
+  position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0;
+}
+.floating-animal {
+  position: absolute;
+  font-size: 2rem;
+  animation: floatAnimal 12s ease-in-out infinite;
+  opacity: 0.35;
+}
+@keyframes floatAnimal {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-30px) rotate(10deg); }
+  50% { transform: translateY(-10px) rotate(-5deg); }
+  75% { transform: translateY(-40px) rotate(8deg); }
+}
+
+/* ── Game Screen ────────────────────────────────────── */
+#game-screen {
+  justify-content: flex-start;
+  padding-top: 20px;
+}
+#game-content {
+  width: 100%;
+  max-width: 560px;
+}
+.round-indicator {
+  display: flex; gap: 8px; margin-bottom: 12px;
+}
+.round-dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #e0e0e0;
+  transition: background 0.3s, transform 0.3s;
+}
+.round-dot.done { background: #66bb6a; transform: scale(1.1); }
+.round-dot.current { background: #ffa726; transform: scale(1.3); animation: dotPulse 1s infinite; }
+@keyframes dotPulse {
+  0%, 100% { transform: scale(1.3); }
+  50% { transform: scale(1.5); }
+}
+
+.prompt-text {
+  font-size: clamp(1.4rem, 5vw, 2.2rem);
+  font-weight: 800;
+  color: #37474f;
+  text-align: center;
+  margin: 10px 0 16px;
+  min-height: 2.5em;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Count the Animals area ─────────────────────────── */
+.animal-area {
+  display: flex; flex-wrap: wrap;
+  justify-content: center; align-items: center;
+  gap: 12px;
+  max-width: 560px;
+  min-height: 180px;
+  padding: 20px;
+  margin-bottom: 10px;
+}
+.animal-item {
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  cursor: pointer;
+  transition: transform 0.15s;
+  line-height: 1;
+  padding: 8px;
+  border-radius: 16px;
+}
+.animal-item:active { transform: scale(0.9); }
+.animal-item.counted {
+  animation: wiggle 0.5s ease;
+  filter: drop-shadow(0 0 8px rgba(255, 193, 7, 0.7));
+}
+.animal-item.counted::after {
+  content: '✓';
+  position: absolute;
+  font-size: 1rem;
+  top: -4px; right: -4px;
+  background: #66bb6a; color: white;
+  border-radius: 50%;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+}
+.animal-item { position: relative; }
+@keyframes wiggle {
+  0% { transform: rotate(0deg) scale(1); }
+  15% { transform: rotate(15deg) scale(1.15); }
+  30% { transform: rotate(-12deg) scale(1.15); }
+  45% { transform: rotate(10deg) scale(1.1); }
+  60% { transform: rotate(-8deg) scale(1.1); }
+  75% { transform: rotate(5deg) scale(1.05); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+.counter-display {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #ff6f00;
+  margin-bottom: 8px;
+  min-height: 2.5rem;
+  transition: transform 0.2s;
+}
+.counter-display.bump {
+  animation: counterBump 0.3s ease;
+}
+@keyframes counterBump {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+
+/* ── Number Choices ─────────────────────────────────── */
+.choices-area {
+  display: flex; flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 10px;
+}
+.choice-btn {
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  border: 5px solid;
+  font-size: 2rem; font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.choice-btn:active { transform: scale(0.9); }
+.choice-btn:hover { transform: scale(1.08); box-shadow: 0 6px 18px rgba(0,0,0,0.15); }
+
+.choice-btn.c0, .choice-btn.c1, .choice-btn.c2, .choice-btn.c3 {
+  background: #e3f2fd; border-color: #90caf9; color: #1565c0;
+}
+
+.choice-btn.correct {
+  animation: correctPop 0.6s ease;
+  background: #a5d6a7 !important;
+  border-color: #43a047 !important;
+  color: #1b5e20 !important;
+}
+@keyframes correctPop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.3); }
+  60% { transform: scale(0.95); }
+  100% { transform: scale(1.1); }
+}
+.choice-btn.wrong {
+  animation: wrongWobble 0.5s ease;
+}
+@keyframes wrongWobble {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-12px); }
+  40% { transform: translateX(12px); }
+  60% { transform: translateX(-8px); }
+  80% { transform: translateX(8px); }
+  100% { transform: translateX(0); }
+}
+
+/* ── Bubble Pop Mode ────────────────────────────────── */
+.bubble-area {
+  position: relative;
+  width: 100%; max-width: 560px;
+  height: 360px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  border-radius: 30px;
+}
+.bubble {
+  position: absolute;
+  width: 90px; height: 90px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; font-weight: 900;
+  cursor: pointer;
+  animation: bubbleFloat 4s ease-in-out infinite;
+  box-shadow: inset -4px -4px 12px rgba(255,255,255,0.6), 0 4px 15px rgba(0,0,0,0.1);
+  transition: transform 0.15s;
+  border: 3px solid rgba(255,255,255,0.5);
+}
+.bubble::before {
+  content: '';
+  position: absolute;
+  top: 12px; left: 16px;
+  width: 18px; height: 12px;
+  background: rgba(255,255,255,0.5);
+  border-radius: 50%;
+  transform: rotate(-30deg);
+}
+.bubble:active { transform: scale(0.9); }
+@keyframes bubbleFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+.bubble.pop {
+  animation: bubblePop 0.5s ease forwards !important;
+}
+@keyframes bubblePop {
+  0% { transform: scale(1); opacity: 1; }
+  40% { transform: scale(1.4); opacity: 0.8; }
+  100% { transform: scale(0); opacity: 0; }
+}
+.bubble.wrong-bubble {
+  animation: wrongWobble 0.5s ease !important;
+}
+
+/* Math Starter extra elements */
+.math-visual-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.math-group {
+  display: flex; flex-wrap: wrap;
+  gap: 6px; justify-content: center;
+  padding: 10px 16px;
+  background: rgba(255,255,255,0.5);
+  border-radius: 20px;
+}
+.math-operator {
+  font-size: 2.5rem; font-weight: 900;
+  color: #ff6f00;
+  display: flex; align-items: center;
+}
+.math-group .animal-item {
+  font-size: clamp(2rem, 6vw, 3rem);
+  padding: 4px;
+}
+
+/* ── Train Station Mode ────────────────────────────── */
+.train-container {
+  width: 100%;
+  padding: 10px 0;
+}
+.track-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 10px 10px;
+  scrollbar-width: none;
+}
+.track-wrapper::-webkit-scrollbar { display: none; }
+.track {
+  display: flex;
+  align-items: center;
+  position: relative;
+  min-width: max-content;
+  padding: 0 40px;
+}
+.track-line {
+  position: absolute;
+  top: 50%;
+  left: 30px; right: 30px;
+  height: 6px;
+  background: #90a4ae;
+  border-radius: 3px;
+  transform: translateY(-50%);
+}
+.station {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1;
+  min-width: 52px;
+}
+.station-dot {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: #cfd8dc;
+  border: 3px solid #90a4ae;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; font-weight: 800;
+  color: #546e7a;
+  transition: all 0.3s;
+}
+.station.current .station-dot {
+  background: #ffb74d;
+  border-color: #f57c00;
+  color: #e65100;
+  transform: scale(1.2);
+  box-shadow: 0 0 12px rgba(255,152,0,0.5);
+}
+.station.target .station-dot {
+  background: #81d4fa;
+  border-color: #0288d1;
+  color: #01579b;
+  transform: scale(1.2);
+  box-shadow: 0 0 12px rgba(2,136,209,0.5);
+  animation: dotPulse 1s infinite;
+}
+.train-emoji {
+  font-size: 2.2rem;
+  position: absolute;
+  top: -38px;
+  transition: left 0.8s ease-in-out;
+}
+.station-label {
+  font-size: 0.75rem;
+  color: #78909c;
+  margin-top: 4px;
+  font-weight: 700;
+}
+.station.current .station-label { color: #e65100; }
+.station.target .station-label { color: #0288d1; }
+.direction-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 20px;
+}
+.dir-btn {
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  border: 5px solid;
+  font-size: 2.8rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.dir-btn:active { transform: scale(0.9); }
+.dir-btn:hover { transform: scale(1.08); box-shadow: 0 6px 18px rgba(0,0,0,0.15); }
+.dir-btn.left { background: #e3f2fd; border-color: #90caf9; color: #1565c0; }
+.dir-btn.right { background: #e3f2fd; border-color: #90caf9; color: #1565c0; }
+.dir-btn.correct-dir {
+  animation: correctPop 0.6s ease;
+  background: #a5d6a7 !important;
+  border-color: #43a047 !important;
+}
+.dir-btn.wrong-dir {
+  animation: wrongWobble 0.5s ease;
+}
+
+/* ── Hint ───────────────────────────────────────────── */
+.hint-text {
+  font-size: 1.2rem;
+  color: #ef6c00;
+  font-weight: 700;
+  min-height: 1.6em;
+  text-align: center;
+  transition: opacity 0.3s;
+  margin-top: 4px;
+}
+
+/* ── Celebration Screen ─────────────────────────────── */
+#celebration-screen {
+  z-index: 100;
+}
+.celebration-emoji {
+  font-size: clamp(4rem, 15vw, 8rem);
+  animation: celebBounce 1s ease-in-out infinite;
+}
+@keyframes celebBounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-20px) rotate(-5deg); }
+  50% { transform: translateY(-10px) rotate(5deg); }
+  75% { transform: translateY(-25px) rotate(-3deg); }
+}
+.celebration-text {
+  font-size: clamp(1.8rem, 6vw, 3rem);
+  font-weight: 900;
+  color: #37474f;
+  margin: 20px 0 10px;
+  text-align: center;
+}
+.celebration-sub {
+  font-size: clamp(1rem, 3vw, 1.4rem);
+  color: #78909c;
+  text-align: center;
+  margin-bottom: 30px;
+}
+.done-btn {
+  padding: 16px 40px;
+  font-size: 1.3rem; font-weight: 800;
+  border: none; border-radius: 20px;
+  background: linear-gradient(135deg, #a5d6a7, #66bb6a);
+  color: #1b5e20;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(102, 187, 106, 0.4);
+  transition: transform 0.15s;
+}
+.done-btn:hover { transform: scale(1.05); }
+.done-btn:active { transform: scale(0.95); }
+
+/* ── Confetti ───────────────────────────────────────── */
+.confetti-container {
+  position: fixed; inset: 0; pointer-events: none; z-index: 999;
+  overflow: hidden;
+}
+.confetti-piece {
+  position: absolute;
+  width: 12px; height: 12px;
+  top: -20px;
+  animation: confettiFall linear forwards;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* ── Stars burst on correct ─────────────────────────── */
+.star-burst {
+  position: fixed; pointer-events: none; z-index: 200;
+  font-size: 1.8rem;
+  animation: starFly 0.8s ease-out forwards;
+}
+@keyframes starFly {
+  0% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.3); }
+}
+
+/* ── Transition overlay ─────────────────────────────── */
+.transition-overlay {
+  position: fixed; inset: 0; z-index: 150;
+  display: none;
+  align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.85);
+  font-size: clamp(2rem, 8vw, 4rem);
+  font-weight: 900;
+  color: #37474f;
+  text-align: center;
+  flex-direction: column;
+  gap: 10px;
+}
+.transition-overlay.show {
+  display: flex;
+  animation: fadeInOut 1.6s ease forwards;
+}
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ── Responsive tweaks ──────────────────────────────── */
+@media (max-height: 600px) {
+  .animal-area { min-height: 120px; padding: 10px; gap: 8px; }
+  .bubble-area { height: 250px; }
+  .prompt-text { margin: 4px 0 8px; font-size: 1.2rem; min-height: 1.8em; }
+  .round-indicator { margin-bottom: 6px; }
+  .counter-display { font-size: 1.5rem; margin-bottom: 4px; }
+  .choices-area { gap: 10px; margin-top: 6px; }
+  .choice-btn { width: 72px; height: 72px; font-size: 1.6rem; }
+}
+@media (max-width: 400px) {
+  .choice-btn { width: 72px; height: 72px; font-size: 1.6rem; }
+  .bubble { width: 76px; height: 76px; font-size: 1.6rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ Welcome Screen ═══ -->
+<div id="welcome-screen" class="screen active">
+  <div class="floating-animals" id="floating-animals"></div>
+  <div style="z-index:1; display:flex; flex-direction:column; align-items:center;">
+    <div class="title">Enumberator</div>
+    <div class="subtitle">Let's learn numbers together! 🎉</div>
+    <div class="level-grid">
+      <button class="level-btn" onclick="startGame(1)">
+        <span class="level-emoji">🐣</span>
+        <span class="level-name">Little Counter</span>
+        <span class="level-desc">Numbers 1–5</span>
+      </button>
+      <button class="level-btn" onclick="startGame(2)">
+        <span class="level-emoji">🌟</span>
+        <span class="level-name">Number Explorer</span>
+        <span class="level-desc">Numbers 1–10</span>
+      </button>
+      <button class="level-btn" onclick="startGame(3)">
+        <span class="level-emoji">🏆</span>
+        <span class="level-name">Number Champion</span>
+        <span class="level-desc">Numbers 1–20</span>
+      </button>
+      <button class="level-btn" onclick="startGame(4)">
+        <span class="level-emoji">🧮</span>
+        <span class="level-name">Math Starter</span>
+        <span class="level-desc">Adding & Subtracting</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Game Screen ═══ -->
+<div id="game-screen" class="screen">
+  <div class="round-indicator" id="round-indicator"></div>
+  <div class="prompt-text" id="prompt-text"></div>
+  <div id="game-content"></div>
+  <div class="hint-text" id="hint-text"></div>
+  <div class="choices-area" id="choices-area"></div>
+</div>
+
+<!-- ═══ Celebration Screen ═══ -->
+<div id="celebration-screen" class="screen">
+  <div class="celebration-emoji">🎉</div>
+  <div class="celebration-text">You did great!</div>
+  <div class="celebration-sub">All done for now. Amazing job!</div>
+  <button class="done-btn" onclick="goHome()">All Done!</button>
+</div>
+
+<!-- ═══ Transition Overlay ═══ -->
+<div class="transition-overlay" id="transition-overlay"></div>
+
+<!-- ═══ Confetti Container ═══ -->
+<div class="confetti-container" id="confetti-container"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   ENUMBERATOR — Number Learning App
+   ═══════════════════════════════════════════════════════ */
+
+// ── Constants ──
+const ANIMALS = [
+  // Animals
+  '🐸','🐱','🐶','🦋','🐢','🐰','🐻','🐼','🦊','🐨','🐵','🦁','🐧','🐥','🐝','🐞','🦄','🐠','🐙','🦀',
+  '🐘','🦒','🐄','🐖','🐑','🦔','🦦','🦜','🦩','🐳','🐬','🦈','🐊','🦕','🦖','🐌','🦎','🐿️','🦇','🦚',
+  // Plants
+  '🌸','🌻','🌷','🌹','🌺','🌼','🪻','💐','🌵','🌲','🌳','🌴','🍀','🪴','🌱','🍄','🎋','🪷','🌾','🌿','🍁','🍂','🍃'
+];
+const BUBBLE_COLORS = [
+  'rgba(244,143,177,0.75)','rgba(129,199,132,0.75)','rgba(100,181,246,0.75)',
+  'rgba(255,241,118,0.75)','rgba(206,147,216,0.75)','rgba(255,183,77,0.75)',
+  'rgba(128,222,234,0.75)','rgba(255,138,128,0.75)'
+];
+const TOTAL_ROUNDS = 8;
+const STAR_EMOJIS = ['⭐','🌟','✨','💫','🎉','🎊'];
+const CELEBRATION_EMOJIS = ['🎉','🥳','🌈','⭐','🏅','🎊'];
+
+// ── Difficulty Configs ──
+const LEVELS = {
+  1: { name: 'Little Counter', min: 1, max: 5, choices: 2 },
+  2: { name: 'Number Explorer', min: 1, max: 10, choices: 3 },
+  3: { name: 'Number Champion', min: 1, max: 20, choices: 4 },
+  4: { name: 'Math Starter', min: 1, max: 10, choices: 3 }
+};
+
+// ── Game State ──
+let state = {
+  level: 1,
+  round: 0,
+  totalRounds: TOTAL_ROUNDS,
+  mode: 'count',        // 'count' or 'bubble'
+  answer: 0,
+  counted: 0,
+  animals: [],
+  countedSet: new Set(),
+  phase: 'counting',    // 'counting' | 'choosing' | 'done'
+  locked: false,
+  mathA: 0,
+  mathB: 0,
+  mathOp: '+',
+  recentAnswers: []
+};
+
+// ── Audio Context (lazy init) ──
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+// ── Sound Effects ──
+function playTone(freq, duration, type = 'sine', volume = 0.15) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  } catch(e) {}
+}
+
+function playCountSound() {
+  // Pleasant ascending note based on count
+  const base = 400 + state.counted * 60;
+  playTone(base, 0.2, 'sine', 0.12);
+  setTimeout(() => playTone(base * 1.5, 0.15, 'sine', 0.06), 80);
+}
+
+function playCorrectSound() {
+  playTone(523, 0.12, 'sine', 0.15);
+  setTimeout(() => playTone(659, 0.12, 'sine', 0.15), 100);
+  setTimeout(() => playTone(784, 0.2, 'sine', 0.15), 200);
+}
+
+function playWrongSound() {
+  playTone(300, 0.15, 'triangle', 0.1);
+  setTimeout(() => playTone(260, 0.2, 'triangle', 0.1), 120);
+}
+
+function playPopSound() {
+  playTone(800, 0.08, 'sine', 0.12);
+  setTimeout(() => playTone(1200, 0.06, 'sine', 0.08), 40);
+  setTimeout(() => playTone(600, 0.1, 'sine', 0.06), 70);
+}
+
+function playBubbleWrongSound() {
+  playTone(250, 0.2, 'sawtooth', 0.06);
+}
+
+function playCelebrationSound() {
+  const notes = [523, 587, 659, 698, 784, 880, 988, 1047];
+  notes.forEach((n, i) => {
+    setTimeout(() => playTone(n, 0.25, 'sine', 0.1), i * 100);
+  });
+}
+
+// ── Speech ──
+function speak(text, rate = 0.95) {
+  try {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = rate;
+      u.pitch = 1.4;
+      u.volume = 1.0;
+      window.speechSynthesis.speak(u);
+    }
+  } catch(e) {}
+}
+
+// ── Helpers ──
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function randAvoidRecent(min, max) {
+  const range = max - min + 1;
+  // If range is too small to avoid repeats, just pick randomly
+  if (range <= 2) return rand(min, max);
+  let num, tries = 0;
+  do {
+    num = rand(min, max);
+    tries++;
+  } while (state.recentAnswers.includes(num) && tries < 50);
+  state.recentAnswers.push(num);
+  if (state.recentAnswers.length > 3) state.recentAnswers.shift();
+  return num;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── Floating Animals on Welcome ──
+function initFloatingAnimals() {
+  const el = document.getElementById('floating-animals');
+  el.innerHTML = '';
+  for (let i = 0; i < 12; i++) {
+    const a = document.createElement('div');
+    a.className = 'floating-animal';
+    a.textContent = pick(ANIMALS);
+    a.style.left = rand(5, 90) + '%';
+    a.style.top = rand(5, 90) + '%';
+    a.style.animationDelay = (Math.random() * 8) + 's';
+    a.style.animationDuration = (8 + Math.random() * 8) + 's';
+    a.style.fontSize = (1.5 + Math.random() * 1.5) + 'rem';
+    el.appendChild(a);
+  }
+}
+
+// ── Confetti ──
+function launchConfetti(count = 60) {
+  const container = document.getElementById('confetti-container');
+  container.innerHTML = '';
+  const colors = ['#ef5350','#ffa726','#66bb6a','#42a5f5','#ab47bc','#ffee58','#ff7043','#26c6da'];
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = rand(0, 100) + '%';
+    piece.style.background = pick(colors);
+    piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    piece.style.width = rand(8, 14) + 'px';
+    piece.style.height = rand(8, 14) + 'px';
+    piece.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+    piece.style.animationDelay = (Math.random() * 0.8) + 's';
+    container.appendChild(piece);
+  }
+  setTimeout(() => container.innerHTML = '', 4000);
+}
+
+// ── Star Burst on Correct ──
+function starBurst(x, y) {
+  for (let i = 0; i < 6; i++) {
+    const star = document.createElement('div');
+    star.className = 'star-burst';
+    star.textContent = pick(STAR_EMOJIS);
+    const angle = (Math.PI * 2 / 6) * i + Math.random() * 0.5;
+    const dist = 60 + Math.random() * 40;
+    star.style.left = x + 'px';
+    star.style.top = y + 'px';
+    star.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+    star.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+    document.body.appendChild(star);
+    setTimeout(() => star.remove(), 900);
+  }
+}
+
+// ── Transition ──
+function showTransition(emoji, text) {
+  return new Promise(resolve => {
+    const el = document.getElementById('transition-overlay');
+    el.innerHTML = `<div style="font-size:clamp(3rem,12vw,5rem)">${emoji}</div><div>${text}</div>`;
+    el.classList.add('show');
+    setTimeout(() => {
+      el.classList.remove('show');
+      resolve();
+    }, 1600);
+  });
+}
+
+// ── Game Mode Resolution ──
+function getModeForRound(round) {
+  if (state.level === 3) {
+    // Level 3 cycles: count, bubble, train, bubble, count, train, bubble, count
+    const modes = ['count','bubble','train','bubble','count','train','bubble','count'];
+    return modes[(round - 1) % modes.length];
+  }
+  // Other levels: count/bubble alternating in pairs
+  const block = Math.floor((round - 1) / 2);
+  return block % 2 === 0 ? 'count' : 'bubble';
+}
+
+// ── Generate Unique Wrong Answers ──
+function generateChoices(correct, numChoices, min, max) {
+  const choices = new Set([correct]);
+  let tries = 0;
+  while (choices.size < numChoices && tries < 100) {
+    let wrong = rand(min, max);
+    // Keep wrong answers close-ish to correct for good pedagogy
+    if (max - min > 4) {
+      wrong = correct + rand(-3, 3);
+      if (wrong < min) wrong = min;
+      if (wrong > max) wrong = max;
+    }
+    if (wrong !== correct) choices.add(wrong);
+    tries++;
+  }
+  // If not enough unique choices, fill with sequential
+  let fill = min;
+  while (choices.size < numChoices) {
+    if (fill !== correct) choices.add(fill);
+    fill++;
+  }
+  return shuffle([...choices]);
+}
+
+// ═══ START GAME ═══
+function startGame(level) {
+  state.level = level;
+  state.round = 0;
+  state.totalRounds = TOTAL_ROUNDS;
+  state.recentAnswers = [];
+  showScreen('game-screen');
+  buildRoundIndicator();
+  nextRound();
+}
+
+function buildRoundIndicator() {
+  const el = document.getElementById('round-indicator');
+  el.innerHTML = '';
+  for (let i = 1; i <= state.totalRounds; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'round-dot';
+    dot.id = 'round-dot-' + i;
+    el.appendChild(dot);
+  }
+}
+
+function updateRoundIndicator() {
+  for (let i = 1; i <= state.totalRounds; i++) {
+    const dot = document.getElementById('round-dot-' + i);
+    dot.className = 'round-dot';
+    if (i < state.round) dot.classList.add('done');
+    else if (i === state.round) dot.classList.add('current');
+  }
+}
+
+// ═══ NEXT ROUND ═══
+async function nextRound() {
+  state.round++;
+  if (state.round > state.totalRounds) {
+    endGame();
+    return;
+  }
+  state.locked = false;
+  state.mode = getModeForRound(state.round);
+  updateRoundIndicator();
+  document.getElementById('hint-text').textContent = '';
+
+  const transitionMap = {
+    count:  { emoji: '🔢', text: 'Count them all!' },
+    bubble: { emoji: '🫧', text: 'Pop the Bubble!' },
+    train:  { emoji: '🚂', text: 'Train Station!' }
+  };
+  const t = transitionMap[state.mode];
+  await showTransition(t.emoji, t.text);
+
+  if (state.mode === 'count') {
+    setupCountRound();
+  } else if (state.mode === 'bubble') {
+    setupBubbleRound();
+  } else if (state.mode === 'train') {
+    setupTrainRound();
+  }
+}
+
+// ═══ COUNT THE ANIMALS ═══
+function setupCountRound() {
+  const cfg = LEVELS[state.level];
+  const content = document.getElementById('game-content');
+  const choicesEl = document.getElementById('choices-area');
+  const promptEl = document.getElementById('prompt-text');
+  choicesEl.innerHTML = '';
+
+  if (state.level === 4) {
+    setupMathCountRound();
+    return;
+  }
+
+  // Cap counting at 10 for level 3 — tapping 15+ objects is tedious
+  const countMax = state.level === 3 ? 10 : cfg.max;
+  state.answer = randAvoidRecent(cfg.min, countMax);
+  state.counted = 0;
+  state.countedSet = new Set();
+  state.phase = 'counting';
+
+  // Pick random animal type for this round
+  const animalType = pick(ANIMALS);
+  state.animals = Array.from({ length: state.answer }, () => animalType);
+
+  promptEl.textContent = `Tap each ${animalType} to count!`;
+  speak(`Tap each one to count them!`);
+
+  content.innerHTML = `
+    <div class="counter-display" id="counter-display"></div>
+    <div class="animal-area" id="animal-area"></div>
+  `;
+
+  const area = document.getElementById('animal-area');
+  state.animals.forEach((emoji, i) => {
+    const el = document.createElement('div');
+    el.className = 'animal-item';
+    el.textContent = emoji;
+    el.dataset.index = i;
+    el.addEventListener('click', () => tapAnimal(el, i));
+    area.appendChild(el);
+  });
+}
+
+function tapAnimal(el, index) {
+  if (state.phase !== 'counting' || state.locked) return;
+  if (state.countedSet.has(index)) return;
+
+  state.countedSet.add(index);
+  state.counted++;
+  el.classList.add('counted');
+  playCountSound();
+
+  // Update counter display
+  const counterEl = document.getElementById('counter-display');
+  counterEl.textContent = state.counted;
+  counterEl.classList.remove('bump');
+  void counterEl.offsetWidth;
+  counterEl.classList.add('bump');
+
+  speak(String(state.counted), 1.0);
+
+  // All counted? Show choices
+  if (state.counted === state.answer) {
+    setTimeout(() => {
+      state.phase = 'choosing';
+      showChoices();
+    }, 600);
+  }
+}
+
+function showChoices() {
+  const cfg = LEVELS[state.level];
+  const promptEl = document.getElementById('prompt-text');
+  promptEl.textContent = `How many did you count?`;
+  speak('How many did you count?');
+
+  const choices = generateChoices(state.answer, cfg.choices, cfg.min, cfg.max);
+  renderChoices(choices);
+}
+
+function renderChoices(choices) {
+  const choicesEl = document.getElementById('choices-area');
+  choicesEl.innerHTML = '';
+  choices.forEach((num, i) => {
+    const btn = document.createElement('button');
+    btn.className = `choice-btn c${i % 4}`;
+    btn.textContent = num;
+    btn.addEventListener('click', (e) => handleChoice(num, btn, e));
+    choicesEl.appendChild(btn);
+  });
+}
+
+function handleChoice(num, btn, event) {
+  if (state.locked) return;
+
+  if (num === state.answer) {
+    state.locked = true;
+    btn.classList.add('correct');
+    playCorrectSound();
+    speak('Yes! ' + state.answer + '!');
+
+    const rect = btn.getBoundingClientRect();
+    starBurst(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    launchConfetti(25);
+
+    document.getElementById('hint-text').textContent = '';
+    document.getElementById('prompt-text').textContent = `🎉 Yes! It's ${state.answer}!`;
+
+    setTimeout(() => nextRound(), 1800);
+  } else {
+    btn.classList.add('wrong');
+    playWrongSound();
+    document.getElementById('hint-text').textContent = `Not quite! Try again! 💪`;
+    speak('Not quite! Try again!');
+    setTimeout(() => btn.classList.remove('wrong'), 500);
+  }
+}
+
+// ═══ MATH STARTER — COUNT MODE ═══
+function setupMathCountRound() {
+  const cfg = LEVELS[state.level];
+  const content = document.getElementById('game-content');
+  const choicesEl = document.getElementById('choices-area');
+  const promptEl = document.getElementById('prompt-text');
+
+  state.mathOp = Math.random() > 0.4 ? '+' : '-';
+  if (state.mathOp === '+') {
+    state.mathA = rand(1, 5);
+    state.mathB = rand(1, 5);
+    state.answer = state.mathA + state.mathB;
+  } else {
+    state.answer = rand(1, 5);
+    state.mathA = rand(state.answer + 1, 9);
+    state.mathB = state.mathA - state.answer;
+    // Recalc so mathA - mathB = answer
+    state.answer = state.mathA - state.mathB;
+  }
+
+  state.phase = 'choosing';
+  const animalType = pick(ANIMALS);
+
+  if (state.mathOp === '+') {
+    promptEl.textContent = `${state.mathA} ${animalType} + ${state.mathB} more = ?`;
+    speak(`${state.mathA} ${animalType} plus ${state.mathB} more. How many now?`);
+  } else {
+    promptEl.textContent = `${state.mathA} ${animalType} - ${state.mathB} leave = ?`;
+    speak(`${state.mathA} ${animalType}. ${state.mathB} leave. How many are left?`);
+  }
+
+  // Build visual
+  let html = '<div class="math-visual-area">';
+  html += '<div class="math-group">';
+  for (let i = 0; i < state.mathA; i++) {
+    html += `<div class="animal-item" style="cursor:default">${animalType}</div>`;
+  }
+  html += '</div>';
+  html += `<div class="math-operator">${state.mathOp === '+' ? '+' : '−'}</div>`;
+  html += '<div class="math-group">';
+  for (let i = 0; i < state.mathB; i++) {
+    html += `<div class="animal-item" style="cursor:default;${state.mathOp === '-' ? 'opacity:0.4' : ''}">${animalType}</div>`;
+  }
+  html += '</div>';
+  html += '</div>';
+
+  content.innerHTML = html;
+
+  const choices = generateChoices(state.answer, cfg.choices, Math.max(1, state.answer - 3), state.answer + 3);
+  renderChoices(choices);
+}
+
+// ═══ BUBBLE POP ═══
+function setupBubbleRound() {
+  const cfg = LEVELS[state.level];
+  const content = document.getElementById('game-content');
+  const choicesEl = document.getElementById('choices-area');
+  const promptEl = document.getElementById('prompt-text');
+  choicesEl.innerHTML = '';
+  state.locked = false;
+
+  if (state.level === 4) {
+    setupMathBubbleRound();
+    return;
+  }
+
+  state.answer = randAvoidRecent(cfg.min, cfg.max);
+  const numBubbles = Math.min(cfg.choices + 2, cfg.max - cfg.min + 1);
+  const bubbleNums = generateChoices(state.answer, numBubbles, cfg.min, cfg.max);
+
+  promptEl.textContent = `Find the ${state.answer}!`;
+  speak(`Find the number ${state.answer}!`);
+
+  content.innerHTML = `<div class="bubble-area" id="bubble-area"></div>`;
+  const area = document.getElementById('bubble-area');
+
+  // Place bubbles without too much overlap
+  const positions = placeBubbles(numBubbles, area.clientWidth || 500, area.clientHeight || 340, 90);
+
+  bubbleNums.forEach((num, i) => {
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = num;
+    bubble.style.background = BUBBLE_COLORS[i % BUBBLE_COLORS.length];
+    bubble.style.left = positions[i].x + 'px';
+    bubble.style.top = positions[i].y + 'px';
+    bubble.style.animationDelay = (Math.random() * 2) + 's';
+    bubble.style.animationDuration = (3 + Math.random() * 2) + 's';
+    bubble.addEventListener('click', (e) => tapBubble(num, bubble, e));
+    area.appendChild(bubble);
+  });
+}
+
+function setupMathBubbleRound() {
+  const cfg = LEVELS[state.level];
+  const content = document.getElementById('game-content');
+  const promptEl = document.getElementById('prompt-text');
+
+  state.mathOp = Math.random() > 0.4 ? '+' : '-';
+  let a, b;
+  if (state.mathOp === '+') {
+    a = rand(1, 5);
+    b = rand(1, 5);
+    state.answer = a + b;
+  } else {
+    a = rand(3, 9);
+    b = rand(1, a - 1);
+    state.answer = a - b;
+  }
+
+  const opSymbol = state.mathOp === '+' ? '+' : '−';
+  promptEl.textContent = `Pop ${a} ${opSymbol} ${b} = ?`;
+  speak(`Pop the bubble that shows ${a} ${state.mathOp === '+' ? 'plus' : 'minus'} ${b}`);
+
+  const numBubbles = Math.min(cfg.choices + 2, 6);
+  const bubbleNums = generateChoices(state.answer, numBubbles, Math.max(1, state.answer - 4), state.answer + 4);
+
+  content.innerHTML = `<div class="bubble-area" id="bubble-area"></div>`;
+  const area = document.getElementById('bubble-area');
+  const positions = placeBubbles(numBubbles, area.clientWidth || 500, area.clientHeight || 340, 90);
+
+  bubbleNums.forEach((num, i) => {
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = num;
+    bubble.style.background = BUBBLE_COLORS[i % BUBBLE_COLORS.length];
+    bubble.style.left = positions[i].x + 'px';
+    bubble.style.top = positions[i].y + 'px';
+    bubble.style.animationDelay = (Math.random() * 2) + 's';
+    bubble.style.animationDuration = (3 + Math.random() * 2) + 's';
+    bubble.addEventListener('click', (e) => tapBubble(num, bubble, e));
+    area.appendChild(bubble);
+  });
+}
+
+function placeBubbles(count, areaW, areaH, size) {
+  // Ensure area dimensions have sensible defaults
+  if (areaW < 100) areaW = 500;
+  if (areaH < 100) areaH = 340;
+  const margin = 10;
+  const positions = [];
+  for (let i = 0; i < count; i++) {
+    let x, y, attempts = 0, ok = false;
+    while (!ok && attempts < 100) {
+      x = rand(margin, areaW - size - margin);
+      y = rand(margin, areaH - size - margin);
+      ok = true;
+      for (const p of positions) {
+        const dx = p.x - x, dy = p.y - y;
+        if (Math.sqrt(dx * dx + dy * dy) < size * 0.9) { ok = false; break; }
+      }
+      attempts++;
+    }
+    positions.push({ x: x || margin, y: y || margin });
+  }
+  return positions;
+}
+
+function tapBubble(num, el, event) {
+  if (state.locked) return;
+
+  if (num === state.answer) {
+    state.locked = true;
+    el.classList.add('pop');
+    playPopSound();
+    playCorrectSound();
+    speak('Yes! ' + state.answer + '!');
+
+    const rect = el.getBoundingClientRect();
+    starBurst(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    launchConfetti(25);
+
+    document.getElementById('hint-text').textContent = '';
+    document.getElementById('prompt-text').textContent = `🎉 That's right! ${state.answer}!`;
+
+    setTimeout(() => nextRound(), 1800);
+  } else {
+    el.classList.add('wrong-bubble');
+    playBubbleWrongSound();
+    document.getElementById('hint-text').textContent = `Not quite! Try another bubble! 💪`;
+    speak('Not quite! Try another one!');
+    setTimeout(() => el.classList.remove('wrong-bubble'), 500);
+  }
+}
+
+// ═══ TRAIN STATION ═══
+function setupTrainRound() {
+  const content = document.getElementById('game-content');
+  const choicesEl = document.getElementById('choices-area');
+  const promptEl = document.getElementById('prompt-text');
+  choicesEl.innerHTML = '';
+  state.locked = false;
+
+  // Pick two different stations
+  const from = randAvoidRecent(1, 18);
+  let to;
+  do { to = rand(1, 20); } while (to === from || Math.abs(to - from) < 2);
+  state.trainFrom = from;
+  state.trainTo = to;
+  state.answer = to > from ? 'right' : 'left';
+
+  promptEl.textContent = `You're at ${from}. Go to ${to}!`;
+  speak(`You are at station ${from}. You need to go to station ${to}. Which way?`);
+
+  // Determine visible range (window of stations to show)
+  const lo = Math.max(1, Math.min(from, to) - 2);
+  const hi = Math.min(20, Math.max(from, to) + 2);
+
+  let html = '<div class="train-container">';
+  html += '<div class="track-wrapper"><div class="track" id="train-track">';
+  html += '<div class="track-line"></div>';
+  for (let n = lo; n <= hi; n++) {
+    const cls = n === from ? 'station current' : n === to ? 'station target' : 'station';
+    html += `<div class="${cls}" data-station="${n}">`;
+    html += `<div class="station-dot">${n}</div>`;
+    if (n === from) html += '<div class="station-label">You</div>';
+    else if (n === to) html += '<div class="station-label">Go here!</div>';
+    else html += '<div class="station-label">&nbsp;</div>';
+    html += '</div>';
+  }
+  html += '</div></div>';
+  html += '<div class="direction-buttons">';
+  html += '<button class="dir-btn left" id="dir-left" onclick="tapDirection(\'left\')">⬅️</button>';
+  html += '<button class="dir-btn right" id="dir-right" onclick="tapDirection(\'right\')">➡️</button>';
+  html += '</div>';
+  html += '</div>';
+
+  content.innerHTML = html;
+
+  // Scroll to center the current station
+  const wrapper = document.querySelector('.track-wrapper');
+  if (wrapper) {
+    setTimeout(() => {
+      const currentStation = document.querySelector('.station.current');
+      if (currentStation && wrapper.scrollWidth > wrapper.clientWidth) {
+        currentStation.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+      }
+    }, 100);
+  }
+}
+
+function tapDirection(dir) {
+  if (state.locked) return;
+
+  const btn = document.getElementById('dir-' + dir);
+  if (dir === state.answer) {
+    state.locked = true;
+    btn.classList.add('correct-dir');
+    playCorrectSound();
+
+    const dirWord = dir === 'right' ? 'right' : 'left';
+    speak(`Yes! Go ${dirWord} to station ${state.trainTo}!`);
+
+    document.getElementById('hint-text').textContent = '';
+    document.getElementById('prompt-text').textContent =
+      `🎉 Yes! ${state.trainFrom} → ${state.trainTo} is ${dirWord}!`;
+
+    starBurst(
+      btn.getBoundingClientRect().left + btn.getBoundingClientRect().width / 2,
+      btn.getBoundingClientRect().top + btn.getBoundingClientRect().height / 2
+    );
+    launchConfetti(25);
+
+    setTimeout(() => nextRound(), 2000);
+  } else {
+    btn.classList.add('wrong-dir');
+    playWrongSound();
+    document.getElementById('hint-text').textContent = 'Not quite! Think about the numbers. Which is bigger?';
+    speak('Not quite! Look at the numbers. Try the other way!');
+    setTimeout(() => btn.classList.remove('wrong-dir'), 500);
+  }
+}
+
+// ═══ END GAME / CELEBRATION ═══
+function endGame() {
+  showScreen('celebration-screen');
+  playCelebrationSound();
+  speak('You did amazing! Great job!');
+  launchConfetti(80);
+  // Cycle celebration emoji
+  const emojiEl = document.querySelector('.celebration-emoji');
+  let idx = 0;
+  const interval = setInterval(() => {
+    idx = (idx + 1) % CELEBRATION_EMOJIS.length;
+    emojiEl.textContent = CELEBRATION_EMOJIS[idx];
+  }, 1500);
+  // Store interval for cleanup
+  state.celebrationInterval = interval;
+}
+
+function goHome() {
+  if (state.celebrationInterval) clearInterval(state.celebrationInterval);
+  showScreen('welcome-screen');
+  initFloatingAnimals();
+}
+
+// ── Init ──
+initFloatingAnimals();
+</script>
+</body>
+</html>
