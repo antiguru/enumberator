@@ -35,8 +35,7 @@ body {
   align-items: center; justify-content: center;
   padding: 16px;
   transition: opacity 0.5s;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 .screen.active { display: flex; }
 
@@ -111,17 +110,23 @@ body {
 /* ── Game Screen ────────────────────────────────────── */
 #game-screen {
   justify-content: flex-start;
-  padding-top: 12px;
+  padding: 8px 16px;
 }
 #game-content {
   width: 100%;
   max-width: 560px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
 }
 .round-indicator {
-  display: flex; gap: 8px; margin-bottom: 12px;
+  display: flex; gap: 6px; margin-bottom: 4px;
 }
 .round-dot {
-  width: 16px; height: 16px; border-radius: 50%;
+  width: 14px; height: 14px; border-radius: 50%;
   background: #e0e0e0;
   transition: background 0.3s, transform 0.3s;
 }
@@ -133,12 +138,11 @@ body {
 }
 
 .prompt-text {
-  font-size: clamp(1.2rem, 4.5vw, 2.2rem);
+  font-size: clamp(1.2rem, 4.5vw, 2rem);
   font-weight: 800;
   color: #37474f;
   text-align: center;
-  margin: 6px 0 10px;
-  min-height: 1.8em;
+  margin: 2px 0 4px;
   display: flex; align-items: center; justify-content: center;
 }
 
@@ -146,11 +150,9 @@ body {
 .animal-area {
   display: flex; flex-wrap: wrap;
   justify-content: center; align-items: center;
-  gap: 10px;
+  gap: 8px;
   max-width: 560px;
-  min-height: 100px;
-  padding: 12px;
-  margin-bottom: 6px;
+  padding: 8px;
 }
 .animal-item {
   font-size: clamp(2rem, 7vw, 3.5rem);
@@ -187,11 +189,10 @@ body {
 }
 
 .counter-display {
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: 900;
   color: #ff6f00;
-  margin-bottom: 8px;
-  min-height: 2.5rem;
+  margin-bottom: 2px;
   transition: transform 0.2s;
 }
 .counter-display.bump {
@@ -207,8 +208,8 @@ body {
 .choices-area {
   display: flex; flex-wrap: wrap;
   justify-content: center;
-  gap: 16px;
-  margin-top: 10px;
+  gap: 12px;
+  margin-top: 4px;
 }
 .choice-btn {
   width: clamp(68px, 16vw, 88px); height: clamp(68px, 16vw, 88px);
@@ -255,10 +256,11 @@ body {
 .bubble-area {
   position: relative;
   width: 100%; max-width: 560px;
-  height: min(45vh, 340px);
-  margin-bottom: 6px;
+  flex: 1;
+  min-height: 150px;
+  max-height: 360px;
   overflow: hidden;
-  border-radius: 30px;
+  border-radius: 24px;
 }
 .bubble {
   position: absolute;
@@ -327,7 +329,10 @@ body {
 /* ── Train Station Mode ────────────────────────────── */
 .train-container {
   width: 100%;
-  padding: 10px 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 .track-wrapper {
   overflow-x: auto;
@@ -401,14 +406,14 @@ body {
 .direction-buttons {
   display: flex;
   justify-content: center;
-  gap: 30px;
-  margin-top: 20px;
+  gap: 24px;
+  margin-top: 10px;
 }
 .dir-btn {
-  width: clamp(80px, 18vw, 100px); height: clamp(80px, 18vw, 100px);
+  width: clamp(72px, 16vw, 100px); height: clamp(72px, 16vw, 100px);
   border-radius: 50%;
   border: 5px solid;
-  font-size: clamp(2.2rem, 6vw, 2.8rem);
+  font-size: clamp(2rem, 5vw, 2.8rem);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: transform 0.15s, box-shadow 0.15s;
@@ -429,13 +434,12 @@ body {
 
 /* ── Hint ───────────────────────────────────────────── */
 .hint-text {
-  font-size: 1.2rem;
+  font-size: 1rem;
   color: #ef6c00;
   font-weight: 700;
-  min-height: 1.6em;
+  min-height: 1.2em;
   text-align: center;
   transition: opacity 0.3s;
-  margin-top: 4px;
 }
 
 /* ── Celebration Screen ─────────────────────────────── */
@@ -529,58 +533,7 @@ body {
   100% { opacity: 0; }
 }
 
-/* ── Responsive tweaks ──────────────────────────────── */
-@media (max-height: 700px) {
-  .screen { padding: 10px; }
-  #game-screen { padding-top: 8px; }
-  .animal-area { min-height: 80px; padding: 8px; gap: 6px; }
-  .bubble-area { height: min(38vh, 260px); }
-  .prompt-text { margin: 4px 0 6px; font-size: 1.1rem; min-height: 1.4em; }
-  .round-indicator { margin-bottom: 4px; }
-  .round-dot { width: 12px; height: 12px; }
-  .counter-display { font-size: 1.3rem; margin-bottom: 2px; min-height: 1.8rem; }
-  .choices-area { gap: 10px; margin-top: 4px; }
-  .hint-text { font-size: 1rem; min-height: 1.2em; }
-  .direction-buttons { margin-top: 12px; gap: 20px; }
-  .dir-btn { width: 76px; height: 76px; font-size: 2rem; }
-  .train-container { padding: 4px 0; }
-  .station { min-width: 42px; }
-  .station-dot { width: 30px; height: 30px; font-size: 0.8rem; }
-}
-@media (max-height: 550px) {
-  .animal-item { font-size: 1.8rem; padding: 3px; }
-  .animal-area { min-height: 60px; padding: 6px; gap: 4px; }
-  .bubble { width: 64px; height: 64px; font-size: 1.3rem; }
-  .bubble-area { height: min(28vh, 180px); }
-  .prompt-text { margin: 2px 0 4px; font-size: 1rem; min-height: 1.2em; }
-  .choices-area { gap: 8px; margin-top: 2px; }
-  .choice-btn { width: 60px; height: 60px; font-size: 1.3rem; border-width: 3px; }
-  .counter-display { font-size: 1.1rem; min-height: 1.4rem; margin-bottom: 0; }
-  .hint-text { font-size: 0.85rem; min-height: 1em; }
-  .round-dot { width: 10px; height: 10px; }
-  .round-indicator { margin-bottom: 2px; gap: 5px; }
-  .direction-buttons { margin-top: 8px; gap: 16px; }
-  .dir-btn { width: 64px; height: 64px; font-size: 1.8rem; border-width: 4px; }
-  .station { min-width: 36px; }
-  .station-dot { width: 26px; height: 26px; font-size: 0.7rem; }
-  .station-label { font-size: 0.65rem; }
-}
-@media (max-width: 400px) {
-  .bubble { width: 74px; height: 74px; font-size: 1.5rem; }
-  .level-grid { gap: 8px; }
-  .level-btn { padding: 10px 8px; min-height: 70px; }
-  .level-btn .level-emoji { font-size: 1.6rem; margin-bottom: 4px; }
-  .level-btn .level-name { font-size: 1rem; }
-  .level-btn .level-desc { font-size: 0.75rem; }
-}
-@media (max-height: 450px) {
-  #welcome-screen .title { font-size: 1.8rem; margin-bottom: 4px; }
-  #welcome-screen .subtitle { font-size: 0.9rem; margin-bottom: 12px; }
-  .level-btn { padding: 8px 6px; min-height: 56px; }
-  .level-btn .level-emoji { font-size: 1.3rem; margin-bottom: 2px; }
-  .level-btn .level-name { font-size: 0.9rem; }
-  .level-btn .level-desc { font-size: 0.7rem; }
-}
+/* ── Responsive: keep icons big, tighten chrome ────── */
 </style>
 </head>
 <body>
@@ -1146,23 +1099,7 @@ function setupBubbleRound() {
   speak(`Find the number ${state.answer}!`);
 
   content.innerHTML = `<div class="bubble-area" id="bubble-area"></div>`;
-  const area = document.getElementById('bubble-area');
-
-  // Place bubbles without too much overlap
-  const positions = placeBubbles(numBubbles, area.clientWidth || 500, area.clientHeight || 340, 90);
-
-  bubbleNums.forEach((num, i) => {
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble';
-    bubble.textContent = num;
-    bubble.style.background = BUBBLE_COLORS[i % BUBBLE_COLORS.length];
-    bubble.style.left = positions[i].x + 'px';
-    bubble.style.top = positions[i].y + 'px';
-    bubble.style.animationDelay = (Math.random() * 2) + 's';
-    bubble.style.animationDuration = (3 + Math.random() * 2) + 's';
-    bubble.addEventListener('click', (e) => tapBubble(num, bubble, e));
-    area.appendChild(bubble);
-  });
+  requestAnimationFrame(() => populateBubbles(bubbleNums));
 }
 
 function setupMathBubbleRound() {
@@ -1190,13 +1127,25 @@ function setupMathBubbleRound() {
   const bubbleNums = generateChoices(state.answer, numBubbles, Math.max(1, state.answer - 4), state.answer + 4);
 
   content.innerHTML = `<div class="bubble-area" id="bubble-area"></div>`;
+  requestAnimationFrame(() => populateBubbles(bubbleNums));
+}
+
+function populateBubbles(bubbleNums) {
   const area = document.getElementById('bubble-area');
-  const positions = placeBubbles(numBubbles, area.clientWidth || 500, area.clientHeight || 340, 90);
+  if (!area) return;
+  const areaW = area.clientWidth || 400;
+  const areaH = area.clientHeight || 250;
+  // Scale bubble size to fit the area
+  const bubbleSize = Math.min(90, Math.floor(areaH * 0.4), Math.floor(areaW / bubbleNums.length * 0.8));
+  const positions = placeBubbles(bubbleNums.length, areaW, areaH, bubbleSize);
 
   bubbleNums.forEach((num, i) => {
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     bubble.textContent = num;
+    bubble.style.width = bubbleSize + 'px';
+    bubble.style.height = bubbleSize + 'px';
+    bubble.style.fontSize = Math.max(1.2, bubbleSize / 45) + 'rem';
     bubble.style.background = BUBBLE_COLORS[i % BUBBLE_COLORS.length];
     bubble.style.left = positions[i].x + 'px';
     bubble.style.top = positions[i].y + 'px';
